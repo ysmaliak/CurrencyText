@@ -1,0 +1,80 @@
+def branches 
+{
+	dev: "develop",
+  	master: "master"
+}
+end
+
+def cocoapods
+{
+	podspec: "../CurrencyText.podspec"
+}
+end
+
+default_platform(:ios)
+
+platform :ios do
+
+	def is_ci 
+		ENV['CI'] == 'true'
+	end
+  
+  ###-------------------------------- Tests ---------------------------###
+	desc "Run tests"
+	lane :test do
+		scan(
+			package_path: "", # root
+			code_coverage: true, 
+			scheme: "CurrencyText-Package", 
+			device: "iPhone 12",
+			result_bundle: true,
+			output_directory: "fastlane/test_output",
+			xcodebuild_formatter: is_ci ? 'xcbeautify -q --is-ci --renderer github-actions' : 'xcbeautify -q'
+		)
+  	end
+
+    ###-------------------------------- Release ---------------------------###
+
+    desc "Release the framework next version. Available bump types are: [patch, minor, major]."
+    lane :release do |options|
+    	bump_type = options[:bump_type] || "patch"
+		tag bump_type:bump_type
+		publish_pod
+	end
+
+	desc "Tag the next release. Available bump types are: patch, minor, major"
+    lane :tag do |options|
+  		ensure_git_status_clean
+  		
+  		sh "git fetch --tags"
+	  	last_tag = last_git_tag
+
+	  	bump_type = options[:bump_type] || "patch"
+		bump_podspec bump_type:bump_type
+
+	  	spec = read_podspec(path: "#{cocoapods[:podspec]}")
+		version_number = spec["version"]
+
+	  	if (Gem::Version.new(version_number) >= Gem::Version.new(last_tag))
+	      	UI.success "All good! New tag is valid: #{version_number} 💪".green
+	  	else
+	      	raise "New version: #{version_number} is <= last tag: #{last_tag}".yellow
+	  	end
+
+	  	sh "git commit -am \"Bump podspec version: #{version_number}\""
+	  	add_git_tag(tag: version_number)
+	  	push_git_tags
+	  	push_to_git_remote
+	end
+
+	desc "Bump the podspec version. Available bump types are: patch, minor, major."
+    lane :bump_podspec do |options|
+    	bump_type = options[:bump_type] || "patch"
+    	version_bump_podspec(path: "#{cocoapods[:podspec]}", bump_type: bump_type)
+    end
+
+	desc "Publish the new pod version!"
+    lane :publish_pod do
+		pod_push(path: "#{cocoapods[:podspec]}")
+	end
+end
