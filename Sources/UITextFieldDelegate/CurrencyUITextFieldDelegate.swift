@@ -47,17 +47,17 @@ public class CurrencyUITextFieldDelegate: NSObject {
 // MARK: - UITextFieldDelegate
 
 extension CurrencyUITextFieldDelegate: UITextFieldDelegate {
-    
+
     @discardableResult
     open func textFieldShouldBeginEditing(_ textField: UITextField) -> Bool {
         return passthroughDelegate?.textFieldShouldBeginEditing?(textField) ?? true
     }
-    
+
     public func textFieldDidBeginEditing(_ textField: UITextField) {
         textField.setInitialSelectedTextRange()
         passthroughDelegate?.textFieldDidBeginEditing?(textField)
     }
-    
+
     @discardableResult
     public func textFieldShouldEndEditing(_ textField: UITextField) -> Bool {
         if let text = textField.text, text.representsZero && clearsWhenValueIsZero {
@@ -68,21 +68,30 @@ extension CurrencyUITextFieldDelegate: UITextFieldDelegate {
         }
         return passthroughDelegate?.textFieldShouldEndEditing?(textField) ?? true
     }
-    
+
     open func textFieldDidEndEditing(_ textField: UITextField) {
         passthroughDelegate?.textFieldDidEndEditing?(textField)
     }
-    
+
+    open func textFieldDidEndEditing(_ textField: UITextField, reason: UITextField.DidEndEditingReason) {
+        passthroughDelegate?.textFieldDidEndEditing?(textField, reason: reason)
+    }
+
     @discardableResult
     open func textFieldShouldClear(_ textField: UITextField) -> Bool {
         return passthroughDelegate?.textFieldShouldClear?(textField) ?? true
     }
-    
+
     @discardableResult
     open func textFieldShouldReturn(_ textField: UITextField) -> Bool {
         return passthroughDelegate?.textFieldShouldReturn?(textField) ?? true
     }
-    
+
+    @available(iOS 13, *)
+    open func textFieldDidChangeSelection(_ textField: UITextField) {
+        passthroughDelegate?.textFieldDidChangeSelection?(textField)
+    }
+
     @discardableResult
     public func textField(_ textField: UITextField, shouldChangeCharactersIn range: NSRange, replacementString string: String) -> Bool {
         // Store selected text range offset from end, before updating and reformatting the currency string.
@@ -101,7 +110,7 @@ extension CurrencyUITextFieldDelegate: UITextFieldDelegate {
                 replacementString: string
             ) ?? false
         }
-        
+
         guard !string.isEmpty else {
             handleDeletion(in: textField, at: range)
             return returnAndCallPassThroughDelegate()
@@ -110,9 +119,24 @@ extension CurrencyUITextFieldDelegate: UITextFieldDelegate {
             addNegativeSymbolIfNeeded(in: textField, at: range, replacementString: string)
             return returnAndCallPassThroughDelegate()
         }
-        
+
         setFormattedText(in: textField, inputString: string, range: range)
         return returnAndCallPassThroughDelegate()
+    }
+
+    @available(iOS 16.0, *)
+    open func textField(_ textField: UITextField, willDismissEditMenuWith animator: any UIEditMenuInteractionAnimating) {
+        passthroughDelegate?.textField?(textField, willDismissEditMenuWith: animator)
+    }
+
+    @available(iOS 16.0, *)
+    open func textField(_ textField: UITextField, willPresentEditMenuWith animator: any UIEditMenuInteractionAnimating) {
+        passthroughDelegate?.textField?(textField, willPresentEditMenuWith: animator)
+    }
+
+    @available(iOS 16.0, *)
+    open func textField(_ textField: UITextField, editMenuForCharactersIn range: NSRange, suggestedActions: [UIMenuElement]) -> UIMenu? {
+        return passthroughDelegate?.textField?(textField, editMenuForCharactersIn: range, suggestedActions: suggestedActions)
     }
 }
 
