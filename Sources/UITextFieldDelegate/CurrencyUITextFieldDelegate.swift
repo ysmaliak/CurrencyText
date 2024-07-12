@@ -89,6 +89,10 @@ extension CurrencyUITextFieldDelegate: UITextFieldDelegate {
 
     @available(iOS 13, *)
     open func textFieldDidChangeSelection(_ textField: UITextField) {
+        if let text = textField.text, text.representsZero && clearsWhenValueIsZero {
+            textField.text = ""
+        }
+
         passthroughDelegate?.textFieldDidChangeSelection?(textField)
     }
 
@@ -113,14 +117,23 @@ extension CurrencyUITextFieldDelegate: UITextFieldDelegate {
 
         guard !string.isEmpty else {
             handleDeletion(in: textField, at: range)
+            if let text = textField.text, text.representsZero && clearsWhenValueIsZero {
+                textField.text = ""
+            }
             return returnAndCallPassThroughDelegate()
         }
         guard string.hasNumbers else {
             addNegativeSymbolIfNeeded(in: textField, at: range, replacementString: string)
+            if let text = textField.text, text.representsZero && clearsWhenValueIsZero {
+                textField.text = ""
+            }
             return returnAndCallPassThroughDelegate()
         }
 
         setFormattedText(in: textField, inputString: string, range: range)
+        if let text = textField.text, text.representsZero && clearsWhenValueIsZero {
+            textField.text = ""
+        }
         return returnAndCallPassThroughDelegate()
     }
 
